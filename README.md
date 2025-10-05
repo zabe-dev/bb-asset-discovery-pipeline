@@ -26,7 +26,7 @@ A modular bash-based reconnaissance automation tool for bug bounty hunters. Auto
         -   [Step 5: JavaScript Discovery Phase](#step-5-javascript-discovery-phase)
         -   [Step 6: Asset URLs Validation Phase](#step-6-asset-urls-validation-phase)
     -   [Configuration](#configuration)
-    -   [Summary Output](#summary-output)
+    -   [Sample Output](#sample-output)
     -   [Disclaimer](#disclaimer)
 
 ## Features
@@ -102,16 +102,12 @@ Configure the following environment variables:
 ```bash
 # Required for chaos tool (get your API key from https://chaos.projectdiscovery.io)
 export CHAOS_API_KEY="your_projectdiscovery_api_key"
-
-# Required when using -sd flag (path to DNS resolvers file)
-export SHUFFLEDNS_RESOLVERS="/path/to/resolvers.txt"
 ```
 
-**Make the variables persistent:**
+**Make the variable persistent:**
 
 ```bash
 echo 'export CHAOS_API_KEY="your_api_key"' >> ~/.bashrc
-echo 'export SHUFFLEDNS_RESOLVERS="/path/to/resolvers.txt"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -137,6 +133,7 @@ chmod +x main.sh
 | `-dx` | `--dnsx`        | Enable dnsx for subdomain bruteforcing                 | No                                |
 | `-sd` | `--shuffledns`  | Enable shuffledns for subdomain bruteforcing           | No                                |
 | `-w`  | `--wordlist`    | Path to wordlist file                                  | Yes (when `-dx` or `-sd` is used) |
+| `-r`  | `--resolvers`   | Path to DNS resolvers file                             | Yes (when `-sd` is used)          |
 | `-h`  | `--help`        | Show help message                                      | No                                |
 
 ### Examples
@@ -162,13 +159,19 @@ chmod +x main.sh
 **Scan with shuffledns bruteforcing:**
 
 ```bash
-./main.sh example.com -sd -w /path/to/subdomains.txt
+./main.sh example.com -sd -w /path/to/subdomains.txt -r /path/to/resolvers.txt
 ```
 
 **Full scan with all options:**
 
 ```bash
 ./main.sh example.com -ss -dx -w /path/to/subdomains.txt
+```
+
+**Full scan with shuffledns:**
+
+```bash
+./main.sh example.com -ss -sd -w /path/to/subdomains.txt -r /path/to/resolvers.txt
 ```
 
 ## Output Files
@@ -220,7 +223,7 @@ Discovers subdomains using multiple enumeration techniques:
 -   **crt.sh**: Certificate transparency search
 -   **chaos**: ProjectDiscovery's dataset
 -   **dnsx**: DNS bruteforcing (optional, requires `-dx` flag and wordlist)
--   **shuffledns**: Fast DNS bruteforcing (optional, requires `-sd` flag and wordlist)
+-   **shuffledns**: Fast DNS bruteforcing (optional, requires `-sd` flag, wordlist, and resolvers)
 
 **Output**: Resolved and filtered domains saved to `domains.txt`
 

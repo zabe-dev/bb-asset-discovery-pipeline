@@ -225,19 +225,13 @@ step_1() {
             return
         fi
 
-        if [[ -z "${SHUFFLEDNS_RESOLVERS:-}" ]]; then
-            warning "[shuffledns] SHUFFLEDNS_RESOLVERS not set"
-            touch "$SCOPE_DIR/shuffledns.txt"
-            return 0
-        fi
-
         local max_attempts=4
         local attempt=1
         local count=0
         local interval=15
 
         while [ $attempt -le $max_attempts ]; do
-            shuffledns -d "$DOMAIN" -w "$WORDLIST_PATH" -r "$SHUFFLEDNS_RESOLVERS" -mode bruteforce -silent -o "$SCOPE_DIR/shuffledns.txt" >/dev/null 2>&1
+            shuffledns -d "$DOMAIN" -w "$WORDLIST_PATH" -r "$RESOLVERS_PATH" -mode bruteforce -silent -o "$SCOPE_DIR/shuffledns.txt" >/dev/null 2>&1
             count=$(wc -l < "$SCOPE_DIR/shuffledns.txt" 2>/dev/null | awk '{print $1}' || echo "0")
             if [ "$count" -gt 0 ]; then
                 success "[shuffledns] $count domains found"

@@ -25,12 +25,14 @@ show_usage() {
     echo "  -dx, --dnsx           Enable dnsx for subdomain bruteforcing"
     echo "  -sd, --shuffledns     Enable shuffledns for subdomain bruteforcing"
     echo "  -w, --wordlist        Wordlist path (required when -dx or -sd is used)"
+    echo "  -r, --resolvers       Resolvers file path (required when -sd is used)"
     echo "  -h, --help            Show this help message"
     echo
 }
 
 DOMAIN=""
 WORDLIST_PATH=""
+RESOLVERS_PATH=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -52,6 +54,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -w|--wordlist)
             WORDLIST_PATH="$2"
+            shift 2
+            ;;
+        -r|--resolvers)
+            RESOLVERS_PATH="$2"
             shift 2
             ;;
         *)
@@ -81,6 +87,18 @@ if [[ "$RUN_DNSX" == true || "$RUN_SHUFFLEDNS" == true ]]; then
     fi
     if [[ ! -f "$WORDLIST_PATH" ]]; then
         error "Wordlist file not found: $WORDLIST_PATH"
+        exit 1
+    fi
+fi
+
+if [[ "$RUN_SHUFFLEDNS" == true ]]; then
+    if [[ -z "$RESOLVERS_PATH" ]]; then
+        error "Resolvers file path (-r) is required when using -sd"
+        show_usage
+        exit 1
+    fi
+    if [[ ! -f "$RESOLVERS_PATH" ]]; then
+        error "Resolvers file not found: $RESOLVERS_PATH"
         exit 1
     fi
 fi
