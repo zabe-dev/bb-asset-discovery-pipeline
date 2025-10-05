@@ -291,38 +291,81 @@ RUN_DNSX=false            # Enable/disable dnsx by default
 RUN_SHUFFLEDNS=false      # Enable/disable shuffledns by default
 ```
 
-## Summary Output
+## Sample Output
 
-After completion, the pipeline displays a comprehensive summary:
+The pipeline outputs detailed results for every stage, including tool-by-tool discoveries, filtering progress, and categorized statistics.
 
 ```
+┌──(jay@Jays-MacBook-Pro)-[~/programs/hackerone/example]
+└─$ ./main.sh example.com
+
+[1] Domain discovery phase
+[~] Looking for domains...
+[+] [crt.sh] 0 domains found
+[+] [chaos] 138 domains found
+[+] [subfinder] 177 domains found
+[+] [assetfinder] 25 domains found
+[+] [findomain] 45 domains found
+[+] [tlsx] 16 assets found
+[+] Found 75/217 reponsive domains
+[+] Filtered 61 domains as targets
+
+[2] URL discovery phase
+[~] Looking for URLs...
+[+] [waymore] 453989 URLs collected
+[+] [hakrawler] 722 URLs collected
+[+] [paramspider] 28 URLs collected
+[+] [katana] 4901 URLs collected
+[+] Total collected: 459640 URLs
+
+[3] URL consolidation phase
+[~] Merging collected URLs...
+[~] Filtering valid URLs...
+[!] Total removed: 83004 URLs
+[+] Total filtered: 373482 URLs
+
+[4] URL categorization phase
+[~] Extracting URLs...
+[+] API endpoints: 6 entries
+[+] Static file URLs: 1040 entries
+[+] Sensitive URLs: 5 entries
+
+[5] JavaScript discovery phase
+[~] Looking for JavaScript files...
+[+] [getjs] 12 in-scope URLs found
+[+] Total found: 1051 URLs
+
+[6] Asset URLs validation phase
+[~] Checking for responsive URLs...
+[+] [static] 892 URLs resolved
+
 [+] Domain Enumeration
-| subfinder: 45
-| findomain: 38
-| assetfinder: 52
-| tlsx: 29
-| crt.sh: 67
-| chaos: 23
+| subfinder: 177
+| findomain: 45
+| assetfinder: 25
+| tlsx: 16
+| crt.sh: 0
+| chaos: 138
 | dnsx: 0
 | shuffledns: 0
-| Total unique: 142
-| Resolved domains: 98
-| Filtered domains: 87
+| Total unique: 217
+| Resolved domains: 75
+| Filtered domains: 61
 
 [+] URL Enumeration
-| waymore: 1254
-| katana: 892
-| paramspider: 456
-| hakrawler: 723
-| Raw unique URLs: 2847
-| Filtered URLs: 2134
+| waymore: 453989
+| katana: 4901
+| paramspider: 28
+| hakrawler: 696
+| Raw unique URLs: 456486
+| Filtered URLs: 373482
 
 [+] Categorized URLs
-| Sensitive URLs: 34
-| API endpoints: 67
-| Static file URLs: 542
-| Resolved static URLs: 498
-| Total URLs found: 599
+| Sensitive URLs: 5
+| API endpoints: 6
+| Static file URLs: 1051
+| Resolved static URLs: 892
+| Total URLs found: 903
 ```
 
 ## Disclaimer
