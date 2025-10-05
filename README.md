@@ -1,10 +1,10 @@
-# BugBounty Asset Discovery Pipeline
+# Bug Bounty Asset Discovery Pipeline
 
 A modular bash-based reconnaissance automation tool for bug bounty hunters. Automates domain enumeration, URL discovery, JavaScript file collection, and asset categorization through a structured 6-phase pipeline.
 
 ## Table of Contents
 
--   [BugBounty Asset Discovery Pipeline](#bugbounty-asset-discovery-pipeline)
+-   [Bug Bounty Asset Discovery Pipeline](#bug-bounty-asset-discovery-pipeline)
     -   [Table of Contents](#table-of-contents)
     -   [Features](#features)
     -   [Project Structure](#project-structure)
