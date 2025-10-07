@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/bash
+#!/usr/bin/env bash
 
 error() { echo "[x] $1" >&2; }
 success() { echo "[+] $1"; }
