@@ -75,13 +75,16 @@ install_system_deps() {
 }
 
 install_go() {
-    if command_exists go; then
-        if go version >/dev/null 2>&1; then
+    if command_exists go && go version >/dev/null 2>&1; then
+        echo -e "Go installed: ${DIM}$(go version)${NC}"
+        return
+    fi
+
+    if [ -d "/usr/local/go" ] && [ -f "/usr/local/go/bin/go" ]; then
+        export PATH=$PATH:/usr/local/go/bin
+        if command_exists go && go version >/dev/null 2>&1; then
             echo -e "Go installed: ${DIM}$(go version)${NC}"
             return
-        else
-            echo -e "Go binary exists but cannot execute, removing..."
-            sudo rm -rf /usr/local/go
         fi
     fi
 
@@ -135,8 +138,6 @@ install_go() {
     fi
 
     echo -e "Target Go package: ${BOLD}${GO_ARCH}${NC}"
-
-    sudo rm -rf /usr/local/go
 
     GO_URL="https://go.dev/dl/go${GO_VERSION}.${GO_ARCH}.tar.gz"
     echo -e "Downloading: ${DIM}${GO_URL}${NC}"
@@ -209,9 +210,17 @@ install_go() {
 }
 
 install_rust() {
-    if command_exists cargo; then
+    if command_exists cargo && cargo --version >/dev/null 2>&1; then
         echo -e "Rust installed: ${DIM}$(cargo --version)${NC}"
         return
+    fi
+
+    if [ -f "$HOME/.cargo/env" ]; then
+        source "$HOME/.cargo/env"
+        if command_exists cargo && cargo --version >/dev/null 2>&1; then
+            echo -e "Rust installed: ${DIM}$(cargo --version)${NC}"
+            return
+        fi
     fi
 
     echo -e "Installing ${BOLD}Rust${NC}..."
@@ -259,6 +268,7 @@ install_python() {
         if ! command_exists pipx; then
             echo -e "Installing pipx for Python tools..."
             sudo apt-get install -y pipx python3-venv
+            pipx ensurepath >/dev/null 2>&1
         fi
     fi
 }
@@ -271,22 +281,38 @@ install_massdns() {
 
     echo -e "Installing ${BOLD}massdns${NC}..."
 
+    CURRENT_DIR=$(pwd)
     TEMP_DIR=$(mktemp -d)
-    cd "$TEMP_DIR"
 
-    git clone https://github.com/blechschmidt/massdns.git
-    cd massdns
+    cd "$TEMP_DIR" || {
+        echo -e "Failed to create temp directory"
+        return 1
+    }
+
+    git clone https://github.com/blechschmidt/massdns.git || {
+        echo -e "Failed to clone massdns"
+        cd "$CURRENT_DIR"
+        rm -rf "$TEMP_DIR"
+        return 1
+    }
+
+    cd massdns || {
+        echo -e "Failed to enter massdns directory"
+        cd "$CURRENT_DIR"
+        rm -rf "$TEMP_DIR"
+        return 1
+    }
 
     if ! make >/dev/null 2>&1; then
         echo -e "Failed to build massdns"
-        cd - >/dev/null
+        cd "$CURRENT_DIR"
         rm -rf "$TEMP_DIR"
         return 1
     fi
 
     sudo make install || sudo cp bin/massdns /usr/local/bin/
 
-    cd - >/dev/null
+    cd "$CURRENT_DIR"
     rm -rf "$TEMP_DIR"
 
     if command_exists massdns; then
@@ -343,49 +369,78 @@ install_go_tools() {
     echo -e "Go-based tools installation complete"
 }
 
+ensure_pipx_path() {
+    if [ -d "$HOME/.local/bin" ]; then
+        export PATH="$HOME/.local/bin:$PATH"
+
+        if ! grep -q '$HOME/.local/bin' ~/.bashrc 2>/dev/null; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+        fi
+    fi
+}
+
 install_python_tools() {
     echo -e "Installing Python-based tools..."
+
+    CURRENT_DIR=$(pwd)
 
     local USE_PIPX=false
     if [[ "$DISTRO" == "kali" ]] || [[ "$DISTRO" == "debian" ]] || [[ "$DISTRO" == "ubuntu" ]]; then
         if command_exists pipx; then
             USE_PIPX=true
             echo -e "Using pipx for Python tool installation"
+            pipx ensurepath >/dev/null 2>&1
+            ensure_pipx_path
         fi
     fi
 
-    if python3 -c "import waymore" 2>/dev/null; then
-        echo -e "${BOLD}waymore${NC} installed"
-    else
-        echo -e "Installing ${BOLD}waymore${NC}..."
-        if [ "$USE_PIPX" = true ]; then
-            pipx install waymore || echo -e "Failed to install ${BOLD}waymore${NC}"
-        else
-            pip3 install waymore || echo -e "Failed to install ${BOLD}waymore${NC}"
-        fi
-    fi
+   if command_exists waymore; then
+    echo -e "${BOLD}waymore${NC} already installed"
+	else
+		echo -e "Installing ${BOLD}waymore${NC}..."
+		if [ "$USE_PIPX" = true ]; then
+			pipx install waymore || echo -e "Failed to install ${BOLD}waymore${NC}"
+			ensure_pipx_path
+		else
+			pip3 install waymore || echo -e "Failed to install ${BOLD}waymore${NC}"
+		fi
+	fi
+
 
     if command_exists paramspider; then
-        echo -e "${BOLD}paramspider${NC} installed"
+        echo -e "${BOLD}paramspider${NC} already installed"
     elif [ -d "$HOME/paramspider" ]; then
         echo -e "${BOLD}paramspider${NC} directory exists, reinstalling..."
-        cd "$HOME/paramspider"
+        cd "$HOME/paramspider" || {
+            echo -e "Failed to enter paramspider directory"
+            cd "$CURRENT_DIR"
+            return 1
+        }
         if [ "$USE_PIPX" = true ]; then
             pipx install . || echo -e "Failed to install ${BOLD}paramspider${NC}"
+            ensure_pipx_path
         else
             pip3 install . || echo -e "Failed to install ${BOLD}paramspider${NC}"
         fi
-        cd - >/dev/null
+        cd "$CURRENT_DIR"
     else
         echo -e "Installing ${BOLD}paramspider${NC}..."
-        git clone https://github.com/devanshbatham/paramspider "$HOME/paramspider"
-        cd "$HOME/paramspider"
+        git clone https://github.com/devanshbatham/paramspider "$HOME/paramspider" || {
+            echo -e "Failed to clone paramspider"
+            return 1
+        }
+        cd "$HOME/paramspider" || {
+            echo -e "Failed to enter paramspider directory"
+            cd "$CURRENT_DIR"
+            return 1
+        }
         if [ "$USE_PIPX" = true ]; then
             pipx install . || echo -e "Failed to install ${BOLD}paramspider${NC}"
+            ensure_pipx_path
         else
             pip3 install . || echo -e "Failed to install ${BOLD}paramspider${NC}"
         fi
-        cd - >/dev/null
+        cd "$CURRENT_DIR"
     fi
 
     echo -e "Python-based tools installation complete"
@@ -393,7 +448,7 @@ install_python_tools() {
 
 install_findomain() {
     if command_exists findomain; then
-        echo -e "${BOLD}findomain${NC} installed"
+        echo -e "${BOLD}findomain${NC} already installed"
         return
     fi
 
@@ -455,17 +510,26 @@ install_findomain() {
             fi
 
             TEMP_DIR=$(mktemp -d)
-            cd "$TEMP_DIR"
-            git clone https://github.com/findomain/findomain.git
-            cd findomain
+            cd "$TEMP_DIR" || {
+                echo -e "Failed to create temp directory"
+                return 1
+            }
+            git clone https://github.com/findomain/findomain.git || {
+                echo -e "Failed to clone findomain"
+                rm -rf "$TEMP_DIR"
+                return 1
+            }
+            cd findomain || {
+                echo -e "Failed to enter findomain directory"
+                rm -rf "$TEMP_DIR"
+                return 1
+            }
             cargo build --release || {
                 echo -e "Failed to build findomain from source"
-                cd -
                 rm -rf "$TEMP_DIR"
                 return 1
             }
             sudo cp target/release/findomain /usr/bin/
-            cd - >/dev/null
             rm -rf "$TEMP_DIR"
         fi
 
@@ -512,12 +576,8 @@ install_findomain() {
 }
 
 configure_api_keys() {
-    echo -e "API Configuration"
-
-    echo ""
-    echo "Chaos API key: ${DIM}https://chaos.projectdiscovery.io${NC}"
-    echo ""
-
+    echo -e "API Configuration..."
+    echo -e "Chaos API key: ${DIM}https://chaos.projectdiscovery.io${NC}"
     read -p "Configure Chaos API key? (y/n): " -n 1 -r
     echo
 
@@ -534,7 +594,7 @@ configure_api_keys() {
         echo -e "Chaos API key configured"
     else
         echo -e "Skipped API configuration"
-        echo "Configure later: ${DIM}export CHAOS_API_KEY=\"your_key\" in ~/.bashrc${NC}"
+        echo -e "Configure later: ${DIM}export CHAOS_API_KEY=\"YOUR_API_KEY\" in ~/.bashrc${NC}"
     fi
 }
 
@@ -561,25 +621,15 @@ verify_installation() {
     else
         echo -e "Missing tools:"
         for tool in "${missing_tools[@]}"; do
-            echo "  ${BOLD}${tool}${NC}"
+            echo -e "  ${BOLD}${tool}${NC}"
         done
-    fi
-
-    if python3 -c "import waymore" 2>/dev/null; then
-        echo -e "${BOLD}waymore${NC} accessible"
-    elif command_exists waymore; then
-        echo -e "${BOLD}waymore${NC} accessible via pipx"
-    else
-        echo -e "${BOLD}waymore${NC} not accessible"
     fi
 }
 
 finalize_installation() {
     echo -e "Finalizing installation..."
 
-    if command_exists pipx; then
-        pipx ensurepath >/dev/null 2>&1
-    fi
+    ensure_pipx_path
 
     if [ -f ~/.bashrc ]; then
         source ~/.bashrc 2>/dev/null || true
@@ -615,7 +665,7 @@ main() {
     echo -e "Installation complete!"
     echo ""
     echo -e "Next steps:"
-    echo "  ${DIM}./main.sh <domain> [options]${NC}"
+    echo -e "  ${DIM}./main.sh <domain> [options]${NC}"
     echo ""
 }
 
