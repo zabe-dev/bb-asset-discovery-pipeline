@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/bash
+#!/usr/bin/env bash
 
 cleanup() {
     rm -f /tmp/httpx_* /tmp/scope_*.txt 2>/dev/null || true
