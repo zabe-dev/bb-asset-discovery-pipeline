@@ -60,6 +60,16 @@ A modular bash-based reconnaissance automation tool for bug bounty hunters. Auto
 
 ## Installation
 
+### Auto Installer Script
+
+I recommend installing each required tool manually to prevent unwanted changes in your environment setup.
+With that being said, you can use the auto installer script to install everything for you.
+
+```
+chmod +x install.sh
+./install.sh
+```
+
 ### Required Tools
 
 Install the following tools before running the pipeline:
