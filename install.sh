@@ -17,6 +17,8 @@ detect_os() {
         OS="macos"
     elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
         OS="windows"
+        echo -e "Windows is not supported. This script is only tested on Linux systems."
+        exit 1
     else
         echo -e "Unsupported operating system: $OSTYPE"
         exit 1
@@ -66,9 +68,6 @@ install_system_deps() {
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         fi
         brew install "${deps_needed[@]}"
-    elif [[ "$OS" == "windows" ]]; then
-        echo -e "On Windows, ensure Git Bash or WSL is installed"
-        echo -e "Install manually: ${deps_needed[*]}"
     fi
 
     echo -e "System dependencies installed"
@@ -129,12 +128,6 @@ install_go() {
         else
             GO_ARCH="darwin-amd64"
         fi
-    elif [[ "$OS" == "windows" ]]; then
-        if [[ "$ARCH" == "x86_64" ]]; then
-            GO_ARCH="windows-amd64"
-        else
-            GO_ARCH="windows-386"
-        fi
     fi
 
     echo -e "Target Go package: ${BOLD}${GO_ARCH}${NC}"
@@ -169,25 +162,17 @@ install_go() {
         return 1
     fi
 
-    if [[ "$OS" == "windows" ]]; then
-        mkdir -p ~/go
-        tar -C ~/go -xzf /tmp/go.tar.gz
-        export PATH=$PATH:~/go/go/bin
-    else
-        echo -e "Extracting Go to /usr/local..."
-        sudo tar -C /usr/local -xzf /tmp/go.tar.gz
-        export PATH=$PATH:/usr/local/go/bin
-    fi
+    echo -e "Extracting Go to /usr/local..."
+    sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+    export PATH=$PATH:/usr/local/go/bin
 
     rm /tmp/go.tar.gz
 
-    if [[ "$OS" != "windows" ]]; then
-        if ! grep -q "/usr/local/go/bin" ~/.bashrc 2>/dev/null; then
-            echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-        fi
-        if ! grep -q '$HOME/go/bin' ~/.bashrc 2>/dev/null; then
-            echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
-        fi
+    if ! grep -q "/usr/local/go/bin" ~/.bashrc 2>/dev/null; then
+        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+    fi
+    if ! grep -q '$HOME/go/bin' ~/.bashrc 2>/dev/null; then
+        echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
     fi
 
     export GOPATH=$HOME/go
@@ -225,11 +210,6 @@ install_rust() {
 
     echo -e "Installing ${BOLD}Rust${NC}..."
 
-    if [[ "$OS" == "windows" ]]; then
-        echo -e "Install Rust manually from: https://rustup.rs/"
-        return
-    fi
-
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     source "$HOME/.cargo/env"
 
@@ -256,9 +236,6 @@ install_python() {
             fi
         elif [[ "$OS" == "macos" ]]; then
             brew install python3
-        elif [[ "$OS" == "windows" ]]; then
-            echo -e "Install Python3 from: https://www.python.org/downloads/"
-            return
         fi
 
         echo -e "Python3 installed: ${DIM}$(python3 --version)${NC}"
@@ -548,22 +525,6 @@ install_findomain() {
         chmod +x findomain.dms
         sudo mv findomain.dms /usr/local/bin/findomain
         rm -f findomain-osx.zip
-
-    elif [[ "$OS" == "windows" ]]; then
-        echo -e "Downloading findomain for Windows..."
-        curl -LO https://github.com/findomain/findomain/releases/latest/download/findomain-windows.exe.zip || {
-            echo -e "Failed to download findomain"
-            return 1
-        }
-        unzip -o findomain-windows.exe.zip >/dev/null 2>&1
-        mkdir -p ~/bin
-        mv findomain.exe ~/bin/
-        export PATH=$PATH:~/bin
-
-        if ! grep -q '~/bin' ~/.bashrc 2>/dev/null; then
-            echo 'export PATH=$PATH:~/bin' >> ~/.bashrc
-        fi
-        rm -f findomain-windows.exe.zip
     fi
 
     if command_exists findomain; then
