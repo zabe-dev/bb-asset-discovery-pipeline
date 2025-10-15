@@ -179,46 +179,6 @@ step_1() {
         done
     }
 
-    run_dnsx() {
-        if [[ "$RUN_DNSX" != true ]]; then
-            touch "$SCOPE_DIR/dnsx.txt"
-            return
-        fi
-
-        wildcard_test=$(echo "zabe.$DOMAIN" | dnsx -silent -a -resp-only 2>/dev/null)
-
-        if [ -n "$wildcard_test" ]; then
-            success "[dnsx] 0 domains found"
-            touch "$SCOPE_DIR/dnsx.txt"
-            return
-        fi
-
-        local max_attempts=4
-        local attempt=1
-        local count=0
-        local interval=15
-
-        while [ $attempt -le $max_attempts ]; do
-            sed "s/$/.$DOMAIN/" "$WORDLIST_PATH" | \
-                dnsx -silent -a -cname | \
-                sort -u > "$SCOPE_DIR/dnsx.txt" 2>/dev/null
-            count=$(wc -l < "$SCOPE_DIR/dnsx.txt" 2>/dev/null | awk '{print $1}' || echo "0")
-            if [ "$count" -gt 0 ]; then
-                success "[dnsx] $count domains found"
-                return 0
-            fi
-
-            if [ $attempt -eq $max_attempts ]; then
-                success "[dnsx] 0 domains found"
-                touch "$SCOPE_DIR/dnsx.txt"
-                return 0
-            fi
-
-            sleep $interval
-            ((attempt++))
-        done
-    }
-
     run_shuffledns() {
         if [[ "$RUN_SHUFFLEDNS" != true ]]; then
             touch "$SCOPE_DIR/shuffledns.txt"
@@ -249,16 +209,37 @@ step_1() {
         done
     }
 
+    run_port_scan() {
+        if [[ "$RUN_PORT_SCAN" != true ]]; then
+            return
+        fi
+
+        if [[ ! -s "$SCOPE_DIR/domains.txt" ]]; then
+            warning "[port scan] No domains to scan"
+            return
+        fi
+
+        progress "[port scan] Starting port scan..."
+
+        cat "$SCOPE_DIR/domains.txt" | dnsx -silent -r "$RESOLVERS_PATH" -ro | naabu -silent -tp full -nmap-cli 'nmap -sV -oX nmap-output.xml' >/dev/null 2>&1
+
+        if [[ -f "nmap-output.xml" ]]; then
+            mv nmap-output.xml "$SCOPE_DIR/nmap-output.xml"
+            success "[port scan] Scan completed"
+        else
+            warning "[port scan] No results generated"
+        fi
+    }
+
     run_crtsh
     run_chaos
     run_subfinder
     run_assetfinder
     run_findomain
     run_tlsx
-    run_dnsx
     run_shuffledns
 
-    cat "$SCOPE_DIR/subfinder.txt" "$SCOPE_DIR/findomain.txt" "$SCOPE_DIR/assetfinder.txt" "$SCOPE_DIR/tlsx-domains.txt" "$SCOPE_DIR/crtsh.txt" "$SCOPE_DIR/chaos.txt" "$SCOPE_DIR/dnsx.txt" "$SCOPE_DIR/shuffledns.txt" 2>/dev/null | sort -u > "$SCOPE_DIR/domains-raw.txt"
+    cat "$SCOPE_DIR/subfinder.txt" "$SCOPE_DIR/findomain.txt" "$SCOPE_DIR/assetfinder.txt" "$SCOPE_DIR/tlsx-domains.txt" "$SCOPE_DIR/crtsh.txt" "$SCOPE_DIR/chaos.txt" "$SCOPE_DIR/shuffledns.txt" 2>/dev/null | sort -u > "$SCOPE_DIR/domains-raw.txt"
 
     run_httpx "$SCOPE_DIR/domains-raw.txt" "$SCOPE_DIR/domains-resolved.txt"
 
@@ -269,7 +250,6 @@ step_1() {
     fi
 
     filter_domains "$SCOPE_DIR/domains-resolved.txt" "$DOMAIN" "$SCOPE_DIR/domains.txt"
-    sed -E 's~https?://~~' "$SCOPE_DIR/domains.txt" > "$SCOPE_DIR/naabu.txt"
 
     if [[ "$TAKE_SCREENSHOTS" == true ]]; then
         if [[ -s "$SCOPE_DIR/domains.txt" ]]; then
@@ -282,4 +262,6 @@ step_1() {
             warning "No domains to capture screenshots"
         fi
     fi
+
+    run_port_scan
 }

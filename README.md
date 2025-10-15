@@ -4,38 +4,40 @@ A modular bash-based reconnaissance automation tool for bug bounty hunters. Auto
 
 ## Table of Contents
 
--   [Bug Bounty Asset Discovery Pipeline](#bug-bounty-asset-discovery-pipeline)
-    -   [Table of Contents](#table-of-contents)
-    -   [Features](#features)
-    -   [Project Structure](#project-structure)
-    -   [Installation](#installation)
-        -   [Required Tools](#required-tools)
-        -   [Environment Setup](#environment-setup)
-    -   [Usage](#usage)
-        -   [Basic Command](#basic-command)
-        -   [Options](#options)
-        -   [Examples](#examples)
-    -   [Output Files](#output-files)
-        -   [Primary Output Files](#primary-output-files)
-        -   [Intermediate Files](#intermediate-files)
-    -   [Pipeline Steps](#pipeline-steps)
-        -   [Step 1: Domain Discovery Phase](#step-1-domain-discovery-phase)
-        -   [Step 2: URL Discovery Phase](#step-2-url-discovery-phase)
-        -   [Step 3: URL Consolidation Phase](#step-3-url-consolidation-phase)
-        -   [Step 4: URL Categorization Phase](#step-4-url-categorization-phase)
-        -   [Step 5: JavaScript Discovery Phase](#step-5-javascript-discovery-phase)
-        -   [Step 6: Asset URLs Validation Phase](#step-6-asset-urls-validation-phase)
-    -   [Configuration](#configuration)
-    -   [Sample Output](#sample-output)
-    -   [Disclaimer](#disclaimer)
+- [Bug Bounty Asset Discovery Pipeline](#bug-bounty-asset-discovery-pipeline)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Project Structure](#project-structure)
+  - [Installation](#installation)
+    - [Auto Installer Script](#auto-installer-script)
+    - [Required Tools](#required-tools)
+    - [Environment Setup](#environment-setup)
+  - [Usage](#usage)
+    - [Basic Command](#basic-command)
+    - [Options](#options)
+    - [Examples](#examples)
+  - [Output Files](#output-files)
+    - [Primary Output Files](#primary-output-files)
+    - [Intermediate Files](#intermediate-files)
+  - [Pipeline Steps](#pipeline-steps)
+    - [Step 1: Domain Discovery Phase](#step-1-domain-discovery-phase)
+    - [Step 2: URL Discovery Phase](#step-2-url-discovery-phase)
+    - [Step 3: URL Consolidation Phase](#step-3-url-consolidation-phase)
+    - [Step 4: URL Categorization Phase](#step-4-url-categorization-phase)
+    - [Step 5: JavaScript Discovery Phase](#step-5-javascript-discovery-phase)
+    - [Step 6: Asset URLs Validation Phase](#step-6-asset-urls-validation-phase)
+  - [Configuration](#configuration)
+  - [Sample Output](#sample-output)
+  - [Disclaimer](#disclaimer)
 
 ## Features
 
--   **Multi-source Domain Enumeration**: Aggregate results from 8+ subdomain discovery tools
+-   **Multi-source Domain Enumeration**: Aggregate results from 7+ subdomain discovery tools
 -   **Comprehensive URL Discovery**: Crawl and discover URLs from multiple sources including Wayback Machine
 -   **JavaScript Asset Collection**: Automated discovery and validation of JavaScript files
 -   **Intelligent URL Categorization**: Automatically categorize sensitive parameters, API endpoints, and static files
--   **Optional Subdomain Bruteforcing**: Enable dnsx or shuffledns for aggressive enumeration
+-   **Optional Subdomain Bruteforcing**: Enable shuffledns for aggressive enumeration
+-   **Port Scanning**: Optional comprehensive port scanning with nmap service detection
 -   **Screenshot Capability**: Visual documentation of discovered domains
 -   **Parallel Processing**: Faster results through concurrent execution
 -   **Modular Architecture**: Clean separation of concerns for easy maintenance
@@ -83,6 +85,7 @@ go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest
 go install -v github.com/projectdiscovery/katana/cmd/katana@latest
 go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest
 go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
 go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest
 go install -v github.com/tomnomnom/assetfinder@latest
 go install -v github.com/003random/getJS@latest
@@ -102,6 +105,7 @@ pip install .
 **Other tools:**
 
 -   **findomain**: Download from [https://github.com/findomain/findomain](https://github.com/findomain/findomain)
+-   **nmap**: `apt install nmap` or `brew install nmap`
 -   **jq**: `apt install jq` or `brew install jq`
 -   **curl**: Usually pre-installed
 
@@ -140,10 +144,10 @@ chmod +x main.sh
 | Short | Long            | Description                                            | Required                          |
 | ----- | --------------- | ------------------------------------------------------ | --------------------------------- |
 | `-ss` | `--screenshots` | Take screenshots of discovered domains using gowitness | No                                |
-| `-dx` | `--dnsx`        | Enable dnsx for subdomain bruteforcing                 | No                                |
+| `-ps` | `--portscan`    | Enable port scanning with nmap                         | No                                |
 | `-sd` | `--shuffledns`  | Enable shuffledns for subdomain bruteforcing           | No                                |
-| `-w`  | `--wordlist`    | Path to wordlist file                                  | Yes (when `-dx` or `-sd` is used) |
-| `-r`  | `--resolvers`   | Path to DNS resolvers file                             | Yes (when `-sd` is used)          |
+| `-w`  | `--wordlist`    | Path to wordlist file                                  | Yes (when `-sd` is used)          |
+| `-r`  | `--resolvers`   | Path to DNS resolvers file                             | Yes (when `-ps` or `-sd` is used) |
 | `-h`  | `--help`        | Show help message                                      | No                                |
 
 ### Examples
@@ -160,10 +164,10 @@ chmod +x main.sh
 ./main.sh example.com -ss
 ```
 
-**Scan with dnsx bruteforcing:**
+**Scan with port scanning:**
 
 ```bash
-./main.sh example.com -dx -w /path/to/subdomains.txt
+./main.sh example.com -ps -r /path/to/resolvers.txt
 ```
 
 **Scan with shuffledns bruteforcing:**
@@ -175,13 +179,7 @@ chmod +x main.sh
 **Full scan with all options:**
 
 ```bash
-./main.sh example.com -ss -dx -w /path/to/subdomains.txt
-```
-
-**Full scan with shuffledns:**
-
-```bash
-./main.sh example.com -ss -sd -w /path/to/subdomains.txt -r /path/to/resolvers.txt
+./main.sh example.com -ss -ps -sd -w /path/to/subdomains.txt -r /path/to/resolvers.txt
 ```
 
 ## Output Files
@@ -198,6 +196,7 @@ All results are saved in `scope_<domain>/` directory.
 | `api-urls.txt`         | API endpoints and GraphQL URLs                                     |
 | `static-urls-live.txt` | Live static assets (JS, CSS, images, documents)                    |
 | `download.txt`         | Copy of static-urls-live.txt for batch downloading                 |
+| `nmap-output.xml`      | Nmap port scan results with service detection (if `-ps` is used)   |
 
 ### Intermediate Files
 
@@ -212,7 +211,6 @@ All results are saved in `scope_<domain>/` directory.
 | `tlsx-domains.txt`     | tlsx certificate transparency results      |
 | `crtsh.txt`            | crt.sh certificate transparency results    |
 | `chaos.txt`            | chaos dataset results                      |
-| `dnsx.txt`             | dnsx bruteforce results (if enabled)       |
 | `shuffledns.txt`       | shuffledns bruteforce results (if enabled) |
 | `wurls.txt`            | waymore (Wayback Machine) results          |
 | `kurls.txt`            | katana crawl results                       |
@@ -232,10 +230,10 @@ Discovers subdomains using multiple enumeration techniques:
 -   **tlsx**: Certificate transparency log analysis
 -   **crt.sh**: Certificate transparency search
 -   **chaos**: ProjectDiscovery's dataset
--   **dnsx**: DNS bruteforcing (optional, requires `-dx` flag and wordlist)
 -   **shuffledns**: Fast DNS bruteforcing (optional, requires `-sd` flag, wordlist, and resolvers)
+-   **Port Scanning**: Comprehensive port scan with nmap service detection (optional, requires `-ps` flag and resolvers)
 
-**Output**: Resolved and filtered domains saved to `domains.txt`
+**Output**: Resolved and filtered domains saved to `domains.txt`, optional `nmap-output.xml`
 
 ### Step 2: URL Discovery Phase
 
@@ -300,8 +298,8 @@ Modify `lib/config.sh` to customize default behavior:
 ```bash
 CRAWL_DEPTH=2              # Katana crawl depth (1-5 recommended)
 TAKE_SCREENSHOTS=false     # Enable/disable screenshots by default
-RUN_DNSX=false            # Enable/disable dnsx by default
-RUN_SHUFFLEDNS=false      # Enable/disable shuffledns by default
+RUN_PORT_SCAN=false        # Enable/disable port scanning by default
+RUN_SHUFFLEDNS=false       # Enable/disable shuffledns by default
 ```
 
 ## Sample Output
@@ -359,7 +357,6 @@ The pipeline outputs detailed results for every stage, including tool-by-tool di
 | tlsx: 16
 | crt.sh: 0
 | chaos: 138
-| dnsx: 0
 | shuffledns: 0
 | Total unique: 217
 | Resolved domains: 75

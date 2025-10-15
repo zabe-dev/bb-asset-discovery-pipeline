@@ -317,6 +317,7 @@ install_go_tools() {
         ["katana"]="github.com/projectdiscovery/katana/cmd/katana@latest"
         ["chaos"]="github.com/projectdiscovery/chaos-client/cmd/chaos@latest"
         ["dnsx"]="github.com/projectdiscovery/dnsx/cmd/dnsx@latest"
+		["naabu"]="github.com/projectdiscovery/naabu/v2/cmd/naabu@latest"
         ["assetfinder"]="github.com/tomnomnom/assetfinder@latest"
         ["getJS"]="github.com/003random/getJS/v2@latest"
         ["hakrawler"]="github.com/hakluke/hakrawler@latest"

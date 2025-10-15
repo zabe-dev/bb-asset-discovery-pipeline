@@ -21,12 +21,12 @@ show_usage() {
     echo "Usage: $(basename "$0") <domain> [options]"
     echo
     echo "Options:"
-    echo "  -ss, --screenshots    Take screenshots of discovered domains"
-    echo "  -dx, --dnsx           Enable dnsx for subdomain bruteforcing"
+	echo "  -h, --help            Show this help message"
+   	echo "  -w, --wordlist        Wordlist path (required when -sd is used)"
+    echo "  -r, --resolvers       Resolvers file path (required when -ps or -sd is used)"
     echo "  -sd, --shuffledns     Enable shuffledns for subdomain bruteforcing"
-    echo "  -w, --wordlist        Wordlist path (required when -dx or -sd is used)"
-    echo "  -r, --resolvers       Resolvers file path (required when -sd is used)"
-    echo "  -h, --help            Show this help message"
+	echo "  -ps, --portscan       Enable port scanning with naabu and nmap"
+	echo "  -ss, --screenshots    Take screenshots of discovered domains"
     echo
 }
 
@@ -44,8 +44,8 @@ while [[ $# -gt 0 ]]; do
             TAKE_SCREENSHOTS=true
             shift
             ;;
-        -dx|--dnsx)
-            RUN_DNSX=true
+        -ps|--portscan)
+            RUN_PORT_SCAN=true
             shift
             ;;
         -sd|--shuffledns)
@@ -79,9 +79,9 @@ if [[ -z "$DOMAIN" ]]; then
     exit 1
 fi
 
-if [[ "$RUN_DNSX" == true || "$RUN_SHUFFLEDNS" == true ]]; then
+if [[ "$RUN_SHUFFLEDNS" == true ]]; then
     if [[ -z "$WORDLIST_PATH" ]]; then
-        error "Wordlist path (-w) is required when using -dx or -sd"
+        error "Wordlist path (-w) is required when using -sd"
         show_usage
         exit 1
     fi
@@ -89,11 +89,20 @@ if [[ "$RUN_DNSX" == true || "$RUN_SHUFFLEDNS" == true ]]; then
         error "Wordlist file not found: $WORDLIST_PATH"
         exit 1
     fi
-fi
-
-if [[ "$RUN_SHUFFLEDNS" == true ]]; then
     if [[ -z "$RESOLVERS_PATH" ]]; then
         error "Resolvers file path (-r) is required when using -sd"
+        show_usage
+        exit 1
+    fi
+    if [[ ! -f "$RESOLVERS_PATH" ]]; then
+        error "Resolvers file not found: $RESOLVERS_PATH"
+        exit 1
+    fi
+fi
+
+if [[ "$RUN_PORT_SCAN" == true ]]; then
+    if [[ -z "$RESOLVERS_PATH" ]]; then
+        error "Resolvers file path (-r) is required when using -ps"
         show_usage
         exit 1
     fi

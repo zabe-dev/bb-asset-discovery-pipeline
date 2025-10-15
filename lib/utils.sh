@@ -64,7 +64,6 @@ show_summary() {
     echo "| tlsx: $(count_file_lines "$SCOPE_DIR/tlsx-domains.txt")"
     echo "| crt.sh: $(count_file_lines "$SCOPE_DIR/crtsh.txt")"
     echo "| chaos: $(count_file_lines "$SCOPE_DIR/chaos.txt")"
-    echo "| dnsx: $(count_file_lines "$SCOPE_DIR/dnsx.txt")"
     echo "| shuffledns: $(count_file_lines "$SCOPE_DIR/shuffledns.txt")"
     echo "| Total unique: $(count_file_lines "$SCOPE_DIR/domains-raw.txt")"
     echo "| Resolved domains: $(count_file_lines "$SCOPE_DIR/domains-resolved.txt")"
